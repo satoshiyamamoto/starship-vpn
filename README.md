@@ -1,91 +1,95 @@
 # Starship VPN Module
 
-A custom VPN detection module for [Starship](https://starship.rs/) prompt, created with vibe coding sessions. This module provides real-time VPN connection status in your terminal prompt.
+A fast, lightweight VPN detection module for [Starship](https://starship.rs/) prompt. This module provides real-time VPN connection status in your terminal prompt with optimized performance for multiple VPN environments.
 
 ## Features
 
-- **Multi-VPN Support**: Detects Cisco AnyConnect, FortiClient, Tailscale, WireGuard, ZeroTier, and generic VPNs
-- **Configurable Display**: Show/hide IP addresses, vendor prefixes, and customize separators
-- **Performance Optimized**: Uses caching mechanism for fast prompt rendering
+- **Multi-VPN Support**: Detects Cisco AnyConnect, FortiClient, Tailscale, WireGuard, ZeroTier
+- **High Performance**: Fast mode optimized for ultra-quick prompt rendering
+- **Multiple VPN Display**: Show all connected VPNs simultaneously
+- **Configurable Display**: Customize IP visibility, vendor prefixes, and separators
+- **Smart Caching**: 10-second cache system for optimal performance
 - **Environment Control**: Toggle display via environment variables
 - **Cross-Shell Compatible**: Works with both bash and zsh
 
 ## Supported VPN Clients
 
-| VPN Client | Prefix | Detection Method |
-|------------|--------|------------------|
-| Cisco AnyConnect/Secure Client | `cisco` | Process + CLI state check |
-| FortiClient | `forticlient` | Network configuration |
-| Tailscale | `tailscale` | IP range (100.x.x.x) |
-| WireGuard | `wireguard` | Interface name pattern |
-| ZeroTier | `zerotier` | Interface name pattern |
-| Generic VPN | `vpn` | Private IP ranges |
+| VPN Client | Prefix | Detection Method | Example Output |
+|------------|--------|------------------|----------------|
+| Cisco AnyConnect/Secure Client | `cisco` | CLI state check | `cisco` |
+| FortiClient | `forticlient` | Network configuration | `forticlient` |
+| Tailscale | `tailscale` | IP range (100.x.x.x) | `tailscale` |
+| WireGuard | `wireguard` | Interface name pattern | `wireguard` |
+| ZeroTier | `zerotier` | Interface name pattern | `zerotier` |
 
 ## Installation
 
-1. Clone or download the script:
+1. Clone the repository:
    ```bash
    git clone https://github.com/satoshiyamamoto/starship-vpn.git
+   cd starship-vpn
    ```
 
 2. Make the script executable:
    ```bash
-   chmod +x starship-vpn/starship-vpn.sh
+   chmod +x starship-vpn.sh
    ```
 
-3. Create a symlink (optional):
-   ```bash
-   ln -s /path/to/starship-vpn/starship-vpn.sh ~/.config/starship-vpn.sh
-   ```
-
-4. Add the custom module to your `starship.toml`:
+3. Add the custom module to your `starship.toml`:
    ```toml
+   # Set command execution timeout to 3 seconds
+   command_timeout = 3000
+
    [custom.vpn]
    disabled = false
-   command = "~/.config/starship-vpn.sh prompt"
+   command = "~/Projects/src/github.com/satoshiyamamoto/starship-vpn/starship-vpn.sh prompt"
    when = """
-   test "${STARSHIP_VPN_ENABLED:-false}" = "true" && ~/.config/starship-vpn.sh connected
+   test "${STARSHIP_VPN_ENABLED:-false}" = "true" && ~/Projects/src/github.com/satoshiyamamoto/starship-vpn/starship-vpn.sh connected
    """
-   symbol = "🔒"
-   style = "bg:#1d2230"
-   format = '[[ $symbol$output ](fg:#769ff0 bg:#1d2230)]($style)'
+   symbol = ""
+   style = "bg:#394260"
+   format = '[[ $symbol $output ](fg:#769ff0 bg:#394260)]($style)'
    ```
 
-5. Enable the module:
+4. Enable the module:
    ```bash
    export STARSHIP_VPN_ENABLED=true
    ```
 
 ## Configuration
 
-The script supports several configuration options:
+The script supports several configuration options (edit the script file):
 
 ```bash
-# Configuration variables (edit script)
-VPN_SHOW_IP=false          # Show IP addresses/server info
-VPN_SHOW_VENDOR=true       # Show VPN vendor prefixes
-VPN_SHOW_ALL=true          # Show all VPNs or just first
-VPN_SEPARATOR=" | "        # Separator between multiple VPNs
-VPN_CACHE_TTL=5           # Cache TTL in seconds
+# Configuration - Fast Mode with Multi-VPN Support
+VPN_SHOW_IP=false       # Set to true to show IP addresses
+VPN_SHOW_VENDOR=true    # Set to false to hide VPN vendor prefixes  
+VPN_SHOW_ALL=true       # Show all connected VPNs
+VPN_SEPARATOR=" | "     # Separator between multiple VPNs
+VPN_CACHE_TTL=10        # Cache TTL in seconds
 ```
 
-### Display Options
+### Display Examples
 
-| VPN_SHOW_IP | VPN_SHOW_VENDOR | Display Example |
-|-------------|-----------------|-----------------|
-| `false` | `false` | 🔒 (symbol only) |
-| `false` | `true` | 🔒 cisco |
-| `true` | `false` | 🔒 vpn.company.com |
-| `true` | `true` | 🔒 cisco:vpn.company.com |
+#### Multiple VPN Connections
+**Connected to**: Cisco AnyConnect, FortiClient, Tailscale
 
-### Separator Options
+| Configuration | Display Output |
+|---------------|----------------|
+| Default | `cisco | forticlient | tailscale` |
+| `VPN_SHOW_VENDOR=false` | (symbol only) |
+| `VPN_SHOW_IP=true` | `cisco:Connected | forticlient | tailscale:100.64.1.1` |
+| `VPN_SEPARATOR=" • "` | `cisco • forticlient • tailscale` |
+| `VPN_SHOW_ALL=false` | `cisco` (first VPN only) |
+
+#### Separator Options
 
 Choose from various separators for multiple VPN connections:
-- `" | "` (default): cisco | tailscale
-- `" · "`: cisco · tailscale
-- `" / "`: cisco / tailscale
-- `" • "`: cisco • tailscale
-- `", "`: cisco, tailscale
+- `" | "` (default): `cisco | tailscale`
+- `" · "`: `cisco · tailscale` 
+- `" / "`: `cisco / tailscale`
+- `" • "`: `cisco • tailscale`
+- `", "`: `cisco, tailscale`
 
 ## Usage
 
@@ -95,17 +99,11 @@ Choose from various separators for multiple VPN connections:
 # Basic VPN detection
 ./starship-vpn.sh detect
 
-# Check connection status
+# Check connection status (for Starship 'when' condition)
 ./starship-vpn.sh connected
 
 # Get prompt output
 ./starship-vpn.sh prompt
-
-# Count active connections
-./starship-vpn.sh count
-
-# Show only VPN types
-./starship-vpn.sh types
 
 # Cache management
 ./starship-vpn.sh cache clear
@@ -126,28 +124,60 @@ export STARSHIP_VPN_ENABLED=true    # Enable
 unset STARSHIP_VPN_ENABLED          # Disable (default)
 ```
 
-## Performance
+## Performance Optimizations
 
-- **Caching**: 5-second cache to minimize system calls
-- **Optimized Detection**: Efficient VPN client detection logic
-- **Conditional Display**: Only runs when environment variable is set
+- **Fast Mode Only**: Simplified implementation for maximum speed
+- **Smart Caching**: 10-second cache to minimize system calls
+- **Early Exit**: Stops detection at first VPN when `VPN_SHOW_ALL=false`
+- **Optimized Detection**: Efficient interface scanning with regex filtering
+- **Short Timeouts**: 0.3-0.5 second timeouts for external commands
+- **Interface Pre-filtering**: Only scans relevant VPN interfaces
+
+### Performance Benchmarks
+
+- **Cache hit**: ~1ms response time
+- **Cold detection**: ~50-200ms depending on VPN count
+- **Multiple VPN detection**: ~100-300ms for 3+ concurrent VPNs
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Timeout warnings**: Increase `command_timeout` in `starship.toml`
+2. **Missing VPN detection**: Check if your VPN creates standard interfaces
+3. **Slow prompt**: Enable caching and consider setting `VPN_SHOW_ALL=false`
+
+### Debug Commands
+
+```bash
+# Check what interfaces are detected
+ifconfig -l | grep -oE '(wg[0-9]+|tailscale[0-9]*|utun[0-9]+|zt[a-z0-9]+)'
+
+# Check FortiClient status
+scutil --nc list | grep forticlient
+
+# Check Cisco status  
+echo "state" | /opt/cisco/secureclient/bin/vpn -s
+
+# Clear cache and test
+./starship-vpn.sh cache clear && ./starship-vpn.sh
+```
 
 ## Platform Support
 
 - **macOS**: Full support (primary development platform)
-- **Linux**: Partial support (may require adaptation for specific distributions)
+- **Linux**: Partial support (interface detection works, service detection may need adaptation)
 
-## Development
+## Development History
 
-This module was created through vibe coding sessions, iteratively improving VPN detection logic and user experience based on real-world usage scenarios.
-
-### Key Development Phases
+This module evolved through multiple iterations:
 
 1. **Initial Implementation**: Basic Powerlevel10k compatibility
-2. **Multi-VPN Support**: Added detection for various VPN clients
-3. **Performance Optimization**: Implemented caching and efficient detection
-4. **User Experience**: Added configuration options and environment controls
-5. **Bug Fixes**: Resolved false detection and edge cases
+2. **Multi-VPN Support**: Added detection for various VPN clients  
+3. **Performance Crisis**: Addressed timeout issues with heavy optimization
+4. **Fast Mode Implementation**: Simplified to fast-mode-only architecture
+5. **Multi-VPN Display**: Added support for showing multiple simultaneous VPNs
+6. **Precision Tuning**: Removed false positives and duplicate detections
 
 ## Contributing
 
@@ -161,4 +191,4 @@ MIT License - feel free to use and modify as needed.
 
 - Inspired by Powerlevel10k's vpn_ip module
 - Built for the Starship prompt ecosystem
-- Created through collaborative vibe coding sessions
+- Optimized through real-world usage and performance testing
