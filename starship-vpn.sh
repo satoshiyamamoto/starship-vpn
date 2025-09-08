@@ -10,9 +10,11 @@ VPN_SHOW_IP=false       # Set to false to show only text (like p10k default)
 VPN_SHOW_VENDOR=true    # Set to false to hide VPN vendor prefixes
 VPN_SHOW_ALL=true       # Show all connected VPNs
 VPN_SEPARATOR=" | "     # Separator between multiple VPNs
-VPN_CACHE_TTL=10        # Cache TTL in seconds
+VPN_CACHE_TTL=5         # Cache TTL in seconds
+VPN_CACHE_TTL_CONNECTED=2  # Shorter TTL for connection check (when condition)
 VPN_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/starship"
 VPN_CACHE_FILE="$VPN_CACHE_DIR/vpn_cache"
+VPN_CACHE_FILE_CONNECTED="$VPN_CACHE_DIR/vpn_connected"
 
 # VPN Type Prefixes (constants)
 readonly VPN_PREFIX_CISCO="cisco"
@@ -129,23 +131,50 @@ vpn_detect() {
 
 # Fast connection check for Starship 'when' condition
 vpn_connected() {
-    # Check cache first
-    if vpn_cache_valid; then
-        [[ -n "$(vpn_cache_read)" ]] && return 0 || return 1
+    # Use shorter TTL cache for connection check
+    # This balances performance with accuracy
+    
+    # Check cache with shorter TTL
+    if [[ -f "$VPN_CACHE_FILE_CONNECTED" ]]; then
+        local cache_time
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            cache_time=$(stat -f %m "$VPN_CACHE_FILE_CONNECTED" 2>/dev/null || echo 0)
+        else
+            cache_time=$(stat -c %Y "$VPN_CACHE_FILE_CONNECTED" 2>/dev/null || echo 0)
+        fi
+        
+        if [[ $(($(date +%s) - cache_time)) -lt $VPN_CACHE_TTL_CONNECTED ]]; then
+            [[ "$(cat "$VPN_CACHE_FILE_CONNECTED")" == "1" ]] && return 0 || return 1
+        fi
     fi
     
-    # Ultra-fast interface check
-    ifconfig -l 2>/dev/null | grep -qE '(wg[0-9]+|tailscale[0-9]*|utun[0-9]+|zt[a-z0-9]+)' && return 0
+    # Perform actual check
+    local connected=0
     
+    # Single ifconfig call with optimized parsing
+    local ifconfig_output=$(ifconfig 2>/dev/null)
+    
+    # Check for WireGuard or ZeroTier (fast check by interface name)
+    if echo "$ifconfig_output" | grep -qE '^(wg[0-9]+|zt[a-z0-9]+):'; then
+        connected=1
+    # Check for Tailscale IP (100.x.x.x)
+    elif echo "$ifconfig_output" | grep -q "inet 100\."; then
+        connected=1
     # Quick FortiClient check
-    scutil --nc list 2>/dev/null | grep -q "Connected.*com\.fortinet\.forticlient" && return 0
-    
+    elif scutil --nc list 2>/dev/null | grep -q "Connected.*com\.fortinet\.forticlient"; then
+        connected=1
     # Quick Cisco check
-    if command -v /opt/cisco/secureclient/bin/vpn >/dev/null 2>&1; then
-        echo "state" | timeout 0.3 /opt/cisco/secureclient/bin/vpn -s 2>/dev/null | grep -q "接続中" && return 0
+    elif command -v /opt/cisco/secureclient/bin/vpn >/dev/null 2>&1; then
+        if echo "state" | timeout 0.3 /opt/cisco/secureclient/bin/vpn -s 2>/dev/null | grep -q "接続中"; then
+            connected=1
+        fi
     fi
     
-    return 1
+    # Cache result
+    mkdir -p "$VPN_CACHE_DIR" 2>/dev/null
+    echo "$connected" > "$VPN_CACHE_FILE_CONNECTED" 2>/dev/null
+    
+    [[ $connected -eq 1 ]] && return 0 || return 1
 }
 
 # Simple prompt function

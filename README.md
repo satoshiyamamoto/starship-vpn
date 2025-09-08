@@ -8,7 +8,7 @@ A fast, lightweight VPN detection module for [Starship](https://starship.rs/) pr
 - **High Performance**: Fast mode optimized for ultra-quick prompt rendering
 - **Multiple VPN Display**: Show all connected VPNs simultaneously
 - **Configurable Display**: Customize IP visibility, vendor prefixes, and separators
-- **Smart Caching**: 10-second cache system for optimal performance
+- **Smart Caching**: Dual-cache system with configurable TTL for optimal performance
 - **Environment Control**: Toggle display via environment variables
 - **Cross-Shell Compatible**: Works with both bash and zsh
 
@@ -37,9 +37,6 @@ A fast, lightweight VPN detection module for [Starship](https://starship.rs/) pr
 
 3. Add the custom module to your `starship.toml`:
    ```toml
-   # Set command execution timeout to 3 seconds
-   command_timeout = 3000
-
    [custom.vpn]
    disabled = false
    command = "~/Projects/src/github.com/satoshiyamamoto/starship-vpn/starship-vpn.sh prompt"
@@ -49,6 +46,7 @@ A fast, lightweight VPN detection module for [Starship](https://starship.rs/) pr
    symbol = ""
    style = "bg:#394260"
    format = '[[ $symbol $output ](fg:#769ff0 bg:#394260)]($style)'
+   ignore_timeout = true  # Recommended for consistent performance
    ```
 
 4. Enable the module:
@@ -62,11 +60,12 @@ The script supports several configuration options (edit the script file):
 
 ```bash
 # Configuration - Fast Mode with Multi-VPN Support
-VPN_SHOW_IP=false       # Set to true to show IP addresses
-VPN_SHOW_VENDOR=true    # Set to false to hide VPN vendor prefixes  
-VPN_SHOW_ALL=true       # Show all connected VPNs
-VPN_SEPARATOR=" | "     # Separator between multiple VPNs
-VPN_CACHE_TTL=10        # Cache TTL in seconds
+VPN_SHOW_IP=false           # Set to true to show IP addresses
+VPN_SHOW_VENDOR=true        # Set to false to hide VPN vendor prefixes  
+VPN_SHOW_ALL=true           # Show all connected VPNs
+VPN_SEPARATOR=" | "         # Separator between multiple VPNs
+VPN_CACHE_TTL=5             # Cache TTL for prompt display (seconds)
+VPN_CACHE_TTL_CONNECTED=2   # Cache TTL for connection check (seconds)
 ```
 
 ### Display Examples
@@ -127,25 +126,31 @@ unset STARSHIP_VPN_ENABLED          # Disable (default)
 ## Performance Optimizations
 
 - **Fast Mode Only**: Simplified implementation for maximum speed
-- **Smart Caching**: 10-second cache to minimize system calls
+- **Dual-Cache System**: Separate caches for prompt display (5s) and connection check (2s)
+- **Real-time Connection Check**: Cache-free option for accurate status after long processes
+- **Single ifconfig Call**: Optimized to make only one system call per check
 - **Early Exit**: Stops detection at first VPN when `VPN_SHOW_ALL=false`
 - **Optimized Detection**: Efficient interface scanning with regex filtering
-- **Short Timeouts**: 0.3-0.5 second timeouts for external commands
+- **Short Timeouts**: 0.3 second timeouts for external commands
 - **Interface Pre-filtering**: Only scans relevant VPN interfaces
 
 ### Performance Benchmarks
 
 - **Cache hit**: ~1ms response time
+- **Connection check (with cache)**: ~130-180ms for real-time accuracy
 - **Cold detection**: ~50-200ms depending on VPN count
 - **Multiple VPN detection**: ~100-300ms for 3+ concurrent VPNs
+- **With `ignore_timeout = true`**: No impact on prompt rendering speed
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Timeout warnings**: Increase `command_timeout` in `starship.toml`
+1. **Timeout warnings**: Add `ignore_timeout = true` to your custom.vpn module
 2. **Missing VPN detection**: Check if your VPN creates standard interfaces
 3. **Slow prompt**: Enable caching and consider setting `VPN_SHOW_ALL=false`
+4. **VPN showing after long processes**: Fixed in latest version with real-time connection checks
+5. **False positives on utun interfaces**: Now validates interfaces have active IP addresses
 
 ### Debug Commands
 
@@ -178,6 +183,8 @@ This module evolved through multiple iterations:
 4. **Fast Mode Implementation**: Simplified to fast-mode-only architecture
 5. **Multi-VPN Display**: Added support for showing multiple simultaneous VPNs
 6. **Precision Tuning**: Removed false positives and duplicate detections
+7. **Cache Accuracy Fix**: Implemented dual-cache system with shorter TTL for connection checks
+8. **Interface Validation**: Added IP address validation to eliminate false positives from inactive interfaces
 
 ## Contributing
 
