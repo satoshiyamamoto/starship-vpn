@@ -9,7 +9,7 @@ A fast, lightweight VPN detection module for [Starship](https://starship.rs/) pr
 - **Multiple VPN Display**: Show all connected VPNs simultaneously
 - **Configurable Display**: Customize IP visibility, vendor prefixes, and separators
 - **Smart Caching**: Dual-cache system with configurable TTL for optimal performance
-- **Environment Control**: Toggle display via environment variables
+- **Environment Control**: Control display via environment variables
 - **Cross-Shell Compatible**: Works with both bash and zsh
 
 ## Supported VPN Clients
@@ -107,9 +107,6 @@ Choose from various separators for multiple VPN connections:
 # Cache management
 ./starship-vpn.sh cache clear
 ./starship-vpn.sh cache status
-
-# Toggle module on/off
-source <(./starship-vpn.sh toggle)
 
 # Show help
 ./starship-vpn.sh help

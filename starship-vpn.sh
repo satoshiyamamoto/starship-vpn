@@ -219,16 +219,6 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]] || [[ "${(%):-%N}" == "${0}" ]]; then
                     ;;
             esac
             ;;
-        "toggle")
-            current_state="${STARSHIP_VPN_ENABLED:-false}"
-            if [[ "$current_state" == "true" ]]; then
-                echo "unset STARSHIP_VPN_ENABLED"
-                echo "# VPN module disabled" >&2
-            else
-                echo "export STARSHIP_VPN_ENABLED=true"
-                echo "# VPN module enabled" >&2
-            fi
-            ;;
         "help"|"-h"|"--help")
             echo "Starship VPN Detection Script - Fast Mode"
             echo ""
@@ -239,7 +229,6 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]] || [[ "${(%):-%N}" == "${0}" ]]; then
             echo "  connected Check if any VPN is connected"
             echo "  prompt    Show VPN info for prompt"
             echo "  cache     Manage cache (clear|status)"
-            echo "  toggle    Toggle VPN module on/off"
             echo "  help      Show this help"
             echo ""
             echo "Configuration (edit script):"
